@@ -50,3 +50,6 @@ pub use errors::{Result, SheetError};
 
 pub mod cell_encoding;
 pub use cell_encoding::{DecodeCell, EncodeCell};
+
+pub mod client;
+pub use client::{SpreadsheetClient, SpreadsheetError};
