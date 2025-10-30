@@ -3,4 +3,8 @@ name = "sheetable"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
+license-file = "LICENSE"
+description = "A type-safe, provider-agnostic Rust library simplifying CRUD operations for online spreadsheets"
+homepage = "https://github.com/MrSteef/sheetable"
+repository = "https://github.com/MrSteef/sheetable"
+readme = "README.md"
