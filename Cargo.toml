@@ -8,3 +8,12 @@ description = "A type-safe, provider-agnostic Rust library simplifying CRUD oper
 homepage = "https://github.com/MrSteef/sheetable"
 repository = "https://github.com/MrSteef/sheetable"
 readme = "README.md"
+
+[dependencies]
+anyhow = "1.0.100"
+dotenv = "0.15.0"
+google-sheets4 = "6.0.0"
+serde = "1.0.228"
+serde_json = "1.0.145"
+thiserror = "2.0.17"
+tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread"] }
