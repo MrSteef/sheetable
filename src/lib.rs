@@ -7,12 +7,7 @@ use google_sheets4::{
 };
 use serde_json::Value;
 use std::fmt;
-use std::{
-    env,
-    fs::File,
-    io::Read,
-    sync::Arc,
-};
+use std::{env, fs::File, io::Read, sync::Arc};
 use tokio::sync::Mutex;
 
 pub struct GSheet {
@@ -68,7 +63,11 @@ impl GSheet {
         })
     }
 
-    pub async fn write_cell(&self, cell: String, value: Value) -> Result<(), google_sheets4::Error> {
+    pub async fn write_cell(
+        &self,
+        cell: String,
+        value: Value,
+    ) -> Result<(), google_sheets4::Error> {
         let values = vec![vec![value]];
 
         let request: ValueRange = ValueRange {
@@ -77,14 +76,36 @@ impl GSheet {
             values: Some(values),
         };
 
-        let sheets = self
-            .sheets
-            .lock()
-            .await;
+        let sheets = self.sheets.lock().await;
 
         sheets
             .spreadsheets()
             .values_update(request, &self.document_id, &cell)
+            .value_input_option("RAW")
+            .doit()
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn write_range(
+        &self,
+        range: String,
+        values: Vec<Value>,
+    ) -> Result<(), google_sheets4::Error> {
+        let values = vec![values];
+
+        let request: ValueRange = ValueRange {
+            major_dimension: Some("ROWS".to_owned()),
+            range: Some(range.clone()),
+            values: Some(values),
+        };
+
+        let sheets = self.sheets.lock().await;
+
+        sheets
+            .spreadsheets()
+            .values_update(request, &self.document_id, &range)
             .value_input_option("RAW")
             .doit()
             .await?;
@@ -99,7 +120,7 @@ pub enum ServiceAccountError {
     Io(#[from] std::io::Error),
 
     #[error(transparent)]
-    Json(#[from] serde_json::Error)
+    Json(#[from] serde_json::Error),
 }
 
 fn read_service_account_json(file_path: &str) -> Result<ServiceAccountKey, ServiceAccountError> {
