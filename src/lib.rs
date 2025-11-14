@@ -162,3 +162,40 @@ fn read_service_account_json(file_path: &str) -> Result<ServiceAccountKey, Servi
 
     Ok(acc)
 }
+
+pub trait Sheetable {
+    fn to_values(&self) -> Vec<Value>;
+    fn from_values(values: Vec<Value>) -> Self;
+}
+
+pub struct Table<'a, T: Sheetable> {
+    gsheet: &'a GSheet,
+    range: String,
+    _marker: std::marker::PhantomData<T>,
+}
+
+impl<'a, T: Sheetable> Table<'a, T> {
+    pub fn new(gsheet: &'a GSheet,
+    range: impl Into<String>) -> Self {
+        Table {
+            gsheet,
+            range: range.into(),
+            _marker: std::marker::PhantomData,
+        }
+    }
+
+    pub async fn read_all(&self) -> Result<Vec<T>, google_sheets4::Error> {
+        let rows = self.gsheet.read_range(self.range.clone()).await?;
+        let items = rows.into_iter().map(T::from_values).collect();
+        Ok(items)
+    }
+}
+
+impl GSheet {
+    pub fn table<'a, T>(&'a self, range: impl Into<String>) -> Table<'a, T>
+    where
+        T: Sheetable,
+    {
+        Table::new(self, range)
+    }
+}
