@@ -112,6 +112,35 @@ impl GSheet {
 
         Ok(())
     }
+
+    pub async fn read_cell(&self, cell: String) -> Result<Value, google_sheets4::Error> {
+        let sheets = self.sheets.lock().await;
+
+        let (_, result) = sheets
+            .spreadsheets()
+            .values_get(&self.document_id, &cell)
+            .doit()
+            .await?;
+        let mut values = result.values.unwrap(); // make this an actual error
+        let mut row = values.pop().unwrap(); // make this an actual error
+        let cell = row.pop().unwrap(); // make this an actual error
+
+        Ok(cell)
+    }
+
+    pub async fn read_range(&self, range: String) -> Result<Vec<Vec<Value>>, google_sheets4::Error> {
+        let sheets = self.sheets.lock().await;
+
+        let (_, result) = sheets
+            .spreadsheets()
+            .values_get(&self.document_id, &range)
+            .doit()
+            .await?;
+        let values = result.values.unwrap(); // make this an actual error
+
+
+        Ok(values)
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
