@@ -5,6 +5,9 @@ use sheetable::{GSheet, Sheetable, Table};
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
     let gsheet = GSheet::try_new().await?;
+
+    gsheet.clear_range("Blad1!A:B".to_string()).await?;
+
     gsheet
         .write_cell(
             "A1:B1".to_string(),

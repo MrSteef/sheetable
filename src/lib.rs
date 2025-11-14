@@ -141,6 +141,23 @@ impl GSheet {
 
         Ok(values)
     }
+
+    pub async fn clear_range(
+        &self,
+        range: String,
+    ) -> Result<(), google_sheets4::Error> {
+        let request = google_sheets4::api::ClearValuesRequest::default();
+
+        let sheets = self.sheets.lock().await;
+
+        sheets
+            .spreadsheets()
+            .values_clear(request, &self.document_id, &range)
+            .doit()
+            .await?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
