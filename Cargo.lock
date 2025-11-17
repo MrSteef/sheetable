@@ -3,6 +3,12 @@
 version = 4
 
 [[package]]
+name = "a1_notation"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ba2e0c39c1429ffd3c83255056185293c70799ae48c87fa32da95c33ee15f8a"
+
+[[package]]
 name = "android_system_properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1045,6 +1051,7 @@ dependencies = [
 name = "sheetable"
 version = "0.1.0"
 dependencies = [
+ "a1_notation",
  "anyhow",
  "dotenv",
  "google-sheets4",

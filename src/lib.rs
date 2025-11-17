@@ -1,3 +1,4 @@
+use a1_notation::A1;
 use google_sheets4::{
     Sheets,
     api::ValueRange,
@@ -6,7 +7,7 @@ use google_sheets4::{
     yup_oauth2::{ServiceAccountAuthenticator, ServiceAccountKey},
 };
 use serde_json::Value;
-use std::fmt;
+use std::{fmt, str::FromStr};
 use std::{env, fs::File, io::Read, sync::Arc};
 use tokio::sync::Mutex;
 
@@ -142,6 +143,20 @@ impl GSheet {
         Ok(values)
     }
 
+    pub async fn read_range_with_meta(&self, range: String) -> Result<(Vec<Vec<Value>>, String), google_sheets4::Error> {
+        let sheets = self.sheets.lock().await;
+
+        let (_, result) = sheets
+            .spreadsheets()
+            .values_get(&self.document_id, &range)
+            .doit()
+            .await?;
+        let values = result.values.unwrap(); // make this an actual error
+        let range_meta = result.range.unwrap();
+
+        Ok((values, range_meta))
+    }
+
     pub async fn clear_range(
         &self,
         range: String,
@@ -183,6 +198,7 @@ fn read_service_account_json(file_path: &str) -> Result<ServiceAccountKey, Servi
 pub trait Sheetable {
     fn to_values(&self) -> Vec<Value>;
     fn from_values(values: Vec<Value>) -> Self;
+    fn get_key(&self) -> Vec<Value>;
 }
 
 pub struct Table<'a, T: Sheetable> {
@@ -205,6 +221,32 @@ impl<'a, T: Sheetable> Table<'a, T> {
         let rows = self.gsheet.read_range(self.range.clone()).await?;
         let items = rows.into_iter().map(T::from_values).collect();
         Ok(items)
+    }
+
+    pub async fn range_for_key(
+        &self,
+        item: T,
+    ) -> Result<Option<String>, google_sheets4::Error> {
+        let (values, range_meta) = self.gsheet.read_range_with_meta(self.range.clone()).await?;
+
+        if values.is_empty() {
+            return Ok(None);
+        }
+
+        let index = values.into_iter().position(|row| T::from_values(row).get_key() == item.get_key()).unwrap_or(0);
+
+        let full_range = A1::from_str(&range_meta).unwrap();
+
+        let first_row = match full_range.reference {
+            a1_notation::RangeOrCell::Cell(address) => address.row.y,
+            a1_notation::RangeOrCell::ColumnRange {..} => 0,
+            a1_notation::RangeOrCell::NonContiguous(_) => todo!(),
+            a1_notation::RangeOrCell::Range { from, .. } => from.row.y,
+            a1_notation::RangeOrCell::RowRange { from, .. } => from.y,
+        };
+        let row_range = full_range.with_y(first_row + index).to_string();
+
+        Ok(Some(row_range))
     }
 }
 

@@ -34,10 +34,16 @@ async fn main() -> anyhow::Result<()> {
 
     println!("{:?}", items);
 
+    let returned_range = item_table.range_for_key(item.clone()).await.unwrap().unwrap();
+
+    println!("{item:?} is at {returned_range}");
+
+
+
     Ok(())
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Item {
     first: String,
     second: String,
@@ -62,5 +68,9 @@ impl Sheetable for Item {
             .unwrap_or_default()
             .to_string();
         Item { first, second }
+    }
+
+    fn get_key(&self) -> Vec<serde_json::Value> {
+        vec![serde_json::Value::String(self.first.clone())]
     }
 }

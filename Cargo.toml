@@ -10,6 +10,7 @@ repository = "https://github.com/MrSteef/sheetable"
 readme = "README.md"
 
 [dependencies]
+a1_notation = "=0.6.3"
 anyhow = "1.0.100"
 dotenv = "0.15.0"
 google-sheets4 = "6.0.0"
