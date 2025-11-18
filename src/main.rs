@@ -1,5 +1,7 @@
 use dotenv::dotenv;
+use serde_json::Value;
 use sheetable::{GSheet, Sheetable, Table};
+use sheetable::cell_encoding::{EncodeCell, DecodeCell};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -11,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
     gsheet
         .write_cell(
             "A1:B1".to_string(),
-            serde_json::Value::String("Hello world!".to_string()),
+            Value::String("Hello world!".to_string()),
         )
         .await
         .unwrap();
@@ -50,27 +52,28 @@ pub struct Item {
 }
 
 impl Sheetable for Item {
-    fn to_values(&self) -> Vec<serde_json::Value> {
-        let first_value = serde_json::Value::String(self.first.clone());
-        let second_value = serde_json::Value::String(self.second.clone());
-        vec![first_value, second_value]
+    fn to_values(&self) -> Vec<Value> {
+        vec![
+            self.first.encode_cell().unwrap(),
+            self.second.encode_cell().unwrap(),
+        ]
     }
 
-    fn from_values(values: Vec<serde_json::Value>) -> Self {
+    fn from_values(values: Vec<Value>) -> Self {
         let first = values
             .get(0)
-            .and_then(|v| v.as_str())
-            .unwrap_or_default()
-            .to_string();
+            .map(|v| String::decode_cell(v).unwrap_or_default())
+            .unwrap_or_default();
+
         let second = values
             .get(1)
-            .and_then(|v| v.as_str())
-            .unwrap_or_default()
-            .to_string();
+            .map(|v| String::decode_cell(v).unwrap_or_default())
+            .unwrap_or_default();
+
         Item { first, second }
     }
 
-    fn get_key(&self) -> Vec<serde_json::Value> {
-        vec![serde_json::Value::String(self.first.clone())]
+    fn get_key(&self) -> Vec<Value> {
+        vec![Value::String(self.first.clone())]
     }
 }

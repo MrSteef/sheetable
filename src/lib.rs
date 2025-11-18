@@ -11,6 +11,8 @@ use std::{fmt, str::FromStr};
 use std::{env, fs::File, io::Read, sync::Arc};
 use tokio::sync::Mutex;
 
+pub mod cell_encoding;
+
 pub struct GSheet {
     pub sheets: Arc<Mutex<Sheets<HttpsConnector<HttpConnector>>>>,
     pub document_id: String,
