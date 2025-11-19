@@ -1,19 +1,26 @@
+use std::str::FromStr;
+
+use a1_notation::A1;
 use dotenv::dotenv;
 use serde_json::Value;
-use sheetable::{GSheet, Sheetable, Table};
+use sheetable::providers::SpreadsheetProvider;
+use sheetable::providers::google_sheets::GoogleSheetProvider;
+use sheetable::{Sheetable, Table};
 use sheetable::cell_encoding::{EncodeCell, DecodeCell};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
-    let gsheet = GSheet::try_new().await?;
+    let gsheet = GoogleSheetProvider::try_new_from_env().await?;
 
-    gsheet.clear_range("Blad1!A:B".to_string()).await?;
+    let clear_range = A1::from_str("A1:B2").unwrap();
+    gsheet.clear_range(&clear_range).await.unwrap();
 
+    let first_range = A1::from_str("A1:B1").unwrap();
     gsheet
-        .write_cell(
-            "A1:B1".to_string(),
-            Value::String("Hello world!".to_string()),
+        .write_range(
+            &first_range,
+            vec![vec![Value::String("Hello world!".to_string())]],
         )
         .await
         .unwrap();
@@ -22,25 +29,25 @@ async fn main() -> anyhow::Result<()> {
         first: "Hello".to_string(),
         second: "World".to_string(),
     };
+    let second_range = A1::from_str("A2:B2").unwrap();
     gsheet
         .write_range(
-            "A2:B2".to_string(),
-            item.to_values(),
+            &second_range,
+            vec![item.to_values()],
         )
         .await
         .unwrap();
 
-    let item_table: Table<Item> = gsheet.table("A:B");
+    let table_range = A1::from_str("A:B").unwrap();
+    let item_table: Table<Item, GoogleSheetProvider> = Table::new(&gsheet, table_range);
 
     let items = item_table.read_all().await?;
 
     println!("{:?}", items);
 
-    let returned_range = item_table.range_for_key(item.clone()).await.unwrap().unwrap();
+    // let returned_range = item_table.range_for_key(item.clone()).await.unwrap().unwrap();
 
-    println!("{item:?} is at {returned_range}");
-
-
+    // println!("{item:?} is at {returned_range}");
 
     Ok(())
 }
