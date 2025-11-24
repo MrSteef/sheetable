@@ -12,7 +12,7 @@ pub struct RangeResult {
     pub values: Vec<Vec<Value>>,
 
     /// Effective A1 range returned by the provider.
-    pub range: Option<A1>,
+    pub range: A1,
 }
 
 #[allow(async_fn_in_trait)]

@@ -98,7 +98,7 @@ impl SpreadsheetProvider for GoogleSheetProvider {
 
         Ok(RangeResult {
             values,
-            range: Some(returned_range),
+            range: returned_range,
         })
     }
 
@@ -217,7 +217,7 @@ impl SpreadsheetProvider for GoogleSheetProvider {
                         sheet_id: Some(sheet_id),
                         dimension: Some("ROWS".to_owned()),
                         start_index: Some(start_index as i32),
-                        end_index: Some(end_index as i32),
+                        end_index: Some((end_index + 1) as i32),
                     }),
                 }),
                 ..Default::default()

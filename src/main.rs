@@ -13,41 +13,38 @@ async fn main() -> anyhow::Result<()> {
     dotenv().ok();
     let gsheet = GoogleSheetProvider::try_new_from_env().await?;
 
-    let clear_range = A1::from_str("A1:B2").unwrap();
+    let clear_range = A1::from_str("A:B").unwrap();
     gsheet.clear_range(&clear_range).await.unwrap();
-
-    let first_range = A1::from_str("A1:B1").unwrap();
-    gsheet
-        .write_range(
-            &first_range,
-            vec![vec![Value::String("Hello world!".to_string())]],
-        )
-        .await
-        .unwrap();
-
-    let item = Item {
-        first: "Hello".to_string(),
-        second: "World".to_string(),
-    };
-    let second_range = A1::from_str("A2:B2").unwrap();
-    gsheet
-        .write_range(
-            &second_range,
-            vec![item.to_values()],
-        )
-        .await
-        .unwrap();
 
     let table_range = A1::from_str("A:B").unwrap();
     let item_table: Table<Item, GoogleSheetProvider> = Table::new(&gsheet, table_range);
 
+    let mut first_item = Item {
+        first: "Hello".to_string(),
+        second: "World".to_string(),
+    };
+    item_table.create(&first_item).await?;
+
+    let second_item = Item {
+        first: "Hi".to_string(),
+        second: "there!".to_string(),
+    };
+    item_table.create(&second_item).await?;
+
+    first_item.second = "World!".to_string();
+    item_table.edit(&first_item).await?;
+
+    let third_item = Item {
+        first: "Goodbye".to_string(),
+        second: "World".to_string(),
+    };
+    item_table.create(&third_item).await?;
+
+    item_table.delete(second_item).await?;
+
     let items = item_table.read_all().await?;
 
     println!("{:?}", items);
-
-    // let returned_range = item_table.range_for_key(item.clone()).await.unwrap().unwrap();
-
-    // println!("{item:?} is at {returned_range}");
 
     Ok(())
 }

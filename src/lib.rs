@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::error::Error as StdError;
 use thiserror::Error;
 
-use crate::providers::SpreadsheetProvider;
+use crate::providers::{RangeResult, SpreadsheetProvider};
 
 pub mod cell_encoding;
 pub mod providers;
@@ -57,29 +57,47 @@ where
         Ok(items)
     }
 
-    // pub async fn range_for_key(
-    //     &self,
-    //     item: T,
-    // ) -> Result<Option<String>, google_sheets4::Error> {
-    //     let (values, range_meta) = self.gsheet.read_range_with_meta(self.range.clone()).await?;
+    pub async fn range_for_key(&self, item: &T) -> Result<Option<A1>, P::Error> {
+        let RangeResult { values, range } = self.provider.read_range(&self.range).await?;
 
-    //     if values.is_empty() {
-    //         return Ok(None);
-    //     }
+        if values.is_empty() {
+            return Ok(None);
+        }
 
-    //     let index = values.into_iter().position(|row| T::from_values(row).get_key() == item.get_key()).unwrap_or(0);
+        let Some(index) = values
+            .into_iter()
+            .position(|row| T::from_values(row).get_key() == item.get_key())
+        else {
+            return Ok(None);
+        };
 
-    //     let full_range = A1::from_str(&range_meta).unwrap();
+        let first_row = match range.reference {
+            a1_notation::RangeOrCell::Cell(address) => address.row.y,
+            a1_notation::RangeOrCell::ColumnRange {..} => 0,
+            a1_notation::RangeOrCell::NonContiguous(_) => todo!(),
+            a1_notation::RangeOrCell::Range { from, .. } => from.row.y,
+            a1_notation::RangeOrCell::RowRange { from, .. } => from.y,
+        };
+        let row_range = range.with_y(first_row + index);
 
-    //     let first_row = match full_range.reference {
-    //         a1_notation::RangeOrCell::Cell(address) => address.row.y,
-    //         a1_notation::RangeOrCell::ColumnRange {..} => 0,
-    //         a1_notation::RangeOrCell::NonContiguous(_) => todo!(),
-    //         a1_notation::RangeOrCell::Range { from, .. } => from.row.y,
-    //         a1_notation::RangeOrCell::RowRange { from, .. } => from.y,
-    //     };
-    //     let row_range = full_range.with_y(first_row + index).to_string();
+        Ok(Some(row_range))
+    }
+    
+    pub async fn create(&self, item: &T) -> Result<(), P::Error> {
+        self.provider.append_rows(&self.range, vec![item.to_values()]).await
+    }
 
-    //     Ok(Some(row_range))
-    // }
+    pub async fn edit(&self, item: &T) -> Result<(), P::Error> {
+        let range = self.range_for_key(&item).await?.unwrap(); // TODO: handle this properly
+        self.provider.write_range(&range, vec![item.to_values()]).await?;
+
+        Ok(())
+    }
+
+    pub async fn delete(&self, item: T) -> Result<(), P::Error> {
+        let range = self.range_for_key(&item).await?.unwrap(); // TODO: handle this properly
+        self.provider.delete_rows(&range).await?;
+
+        Ok(())
+    }
 }
